@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Job Search Agent</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: #e2e0d8;
+    --text: #1a1917;
+    --text2: #6b6860;
+    --text3: #9c9a94;
+    --accent: #1a1917;
+    --green-bg: #eaf3de;
+    --green-text: #3b6d11;
+    --amber-bg: #faeeda;
+    --amber-text: #854f0b;
+    --gray-bg: #f0efe9;
+    --gray-text: #5f5e5a;
+    --red: #a32d2d;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  body {
+    font-family: 'Georgia', serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  .page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 3rem 2rem 5rem;
+  }
+
+  header {
+    margin-bottom: 2.5rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.5rem;
+  }
+
+  header .eyebrow {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 0.5rem;
+  }
+
+  header h1 {
+    font-size: 28px;
+    font-weight: normal;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+    line-height: 1.2;
+  }
+
+  header p {
+    font-size: 15px;
+    color: var(--text2);
+    font-style: italic;
+  }
+
+  .api-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.5rem;
+  }
+
+  .api-row label {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: var(--text3);
+    white-space: nowrap;
+    letter-spacing: 0.05em;
+  }
+
+  .api-row input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .api-row .save-key {
+    font-size: 11px;
+    color: var(--text3);
+    cursor: pointer;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    background: transparent;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+
+  .api-row .save-key:hover { background: var(--surface2); }
+
+  .section-label {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 0.75rem;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 1rem;
+  }
+
+  .form-field { display: flex; flex-direction: column; gap: 6px; }
+  .form-field label { font-size: 13px; color: var(--text2); }
+
+  select, input[type="text"], textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    font-family: 'Georgia', serif;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  select:focus, input[type="text"]:focus, textarea:focus {
+    border-color: var(--text);
+  }
+
+  textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1.5rem; }
+
+  .chip {
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 99px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.12s;
+    user-select: none;
+    font-family: 'Georgia', serif;
+  }
+
+  .chip:hover { border-color: var(--text); color: var(--text); }
+
+  .chip.active {
+    background: var(--text);
+    color: #fff;
+    border-color: var(--text);
+  }
+
+  .search-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--text);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'Georgia', serif;
+    font-size: 16px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    letter-spacing: 0.01em;
+  }
+
+  .search-btn:hover { opacity: 0.85; }
+  .search-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2rem 0;
+  }
+
+  .results-meta {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 1.25rem;
+  }
+
+  .job-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+    transition: border-color 0.15s;
+  }
+
+  .job-card:hover { border-color: #bbb; }
+
+  .job-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+
+  .job-title {
+    font-size: 17px;
+    font-weight: normal;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  .fit-badge {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 99px;
+    flex-shrink: 0;
+    letter-spacing: 0.04em;
+  }
+
+  .fit-High { background: var(--green-bg); color: var(--green-text); }
+  .fit-Medium { background: var(--amber-bg); color: var(--amber-text); }
+  .fit-Low { background: var(--gray-bg); color: var(--gray-text); }
+
+  .job-org {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 10px;
+  }
+
+  .job-meta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  .meta-item {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.04em;
+  }
+
+  .job-summary {
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.7;
+    margin-bottom: 10px;
+  }
+
+  .fit-reason {
+    font-size: 13px;
+    color: var(--text3);
+    font-style: italic;
+    margin-bottom: 14px;
+    line-height: 1.6;
+  }
+
+  .job-actions { display: flex; gap: 8px; }
+
+  .btn-outline {
+    font-family: 'Georgia', serif;
+    font-size: 13px;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.12s;
+  }
+
+  .btn-outline:hover { background: var(--surface2); }
+
+  .loading-state {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 2rem 0;
+    color: var(--text2);
+    font-style: italic;
+    font-size: 15px;
+  }
+
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--text);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-box {
+    background: #fff5f5;
+    border: 1px solid #f5c1c1;
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    font-size: 14px;
+    color: var(--red);
+    line-height: 1.6;
+  }
+
+  .error-box a { color: var(--red); }
+
+  @media (max-width: 520px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .page { padding: 2rem 1.25rem 4rem; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="eyebrow">AI-powered · Job search agent</div>
+    <h1>Find your next role</h1>
+    <p>Describe what you're looking for — Claude searches the web and ranks by fit</p>
+  </header>
+
+  <!-- API Key -->
+  <div class="api-row">
+    <label>API KEY</label>
+    <input type="password" id="apikey" placeholder="sk-ant-..." autocomplete="off" />
+    <button class="save-key" onclick="saveKey()">Save locally</button>
+  </div>
+
+  <!-- Role + Location -->
+  <div class="form-grid" style="margin-bottom:1rem">
+    <div class="form-field">
+      <label>Role focus</label>
+      <select id="role">
+        <option value="Learning and Development">Learning &amp; Development</option>
+        <option value="Human-Centered Design">Human-Centered Design</option>
+        <option value="Innovation and Design Thinking">Innovation / Design Thinking</option>
+        <option value="Instructional Design">Instructional Design</option>
+        <option value="Organizational Development">Organizational Development</option>
+        <option value="UX Research">UX Research</option>
+      </select>
+    </div>
+    <div class="form-field">
+      <label>Location</label>
+      <input type="text" id="location" value="New York, NY" placeholder="City, remote, etc." />
+    </div>
+  </div>
+
+  <!-- Seniority + Arrangement -->
+  <div class="form-grid" style="margin-bottom:1.25rem">
+    <div class="form-field">
+      <label>Seniority</label>
+      <select id="seniority">
+        <option value="any level">Any level</option>
+        <option value="entry-level or associate">Entry level</option>
+        <option value="mid-level or manager">Mid-level / Manager</option>
+        <option value="senior or lead">Senior / Lead</option>
+        <option value="director or VP">Director / VP</option>
+      </select>
+    </div>
+    <div class="form-field">
+      <label>Work arrangement</label>
+      <select id="remote">
+        <option value="any arrangement">Any</option>
+        <option value="remote">Remote</option>
+        <option value="hybrid">Hybrid</option>
+        <option value="on-site">On-site</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Background -->
+  <div class="form-field" style="margin-bottom:1.25rem">
+    <label>Your background <span style="color:var(--text3);font-style:italic">(helps Claude rank fit)</span></label>
+    <textarea id="background" placeholder="e.g. 8 years in corporate L&D, facilitated design thinking workshops, built onboarding programs for 500+ employees, skilled in Articulate 360 and Miro..."></textarea>
+  </div>
+
+  <!-- Skills -->
+  <div style="margin-bottom:1.5rem">
+    <div class="section-label">Key skills — tap to toggle</div>
+    <div class="chips" id="chips">
+      <span class="chip active" data-skill="facilitation">Facilitation</span>
+      <span class="chip active" data-skill="instructional design">Instructional design</span>
+      <span class="chip" data-skill="design thinking">Design thinking</span>
+      <span class="chip" data-skill="UX research">UX research</span>
+      <span class="chip" data-skill="curriculum development">Curriculum development</span>
+      <span class="chip" data-skill="change management">Change management</span>
+      <span class="chip" data-skill="coaching">Coaching</span>
+      <span class="chip" data-skill="e-learning">E-learning</span>
+      <span class="chip" data-skill="workshop design">Workshop design</span>
+      <span class="chip" data-skill="needs assessment">Needs assessment</span>
+    </div>
+  </div>
+
+  <button class="search-btn" id="searchBtn" onclick="runSearch()">
+    Search for matching roles →
+  </button>
+
+  <div id="results"></div>
+
+</div>
+
+<script>
+  // Restore saved API key
+  const savedKey = localStorage.getItem('anthropic_api_key');
+  if (savedKey) document.getElementById('apikey').value = savedKey;
+
+  function saveKey() {
+    const key = document.getElementById('apikey').value.trim();
+    if (key) {
+      localStorage.setItem('anthropic_api_key', key);
+      const btn = document.querySelector('.save-key');
+      btn.textContent = 'Saved ✓';
+      setTimeout(() => btn.textContent = 'Save locally', 2000);
+    }
+  }
+
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => chip.classList.toggle('active'));
+  });
+
+  async function runSearch() {
+    const apiKey = document.getElementById('apikey').value.trim();
+    const resultsEl = document.getElementById('results');
+
+    if (!apiKey || !apiKey.startsWith('sk-ant-')) {
+      resultsEl.innerHTML = `<hr class="divider"><div class="error-box">Please enter a valid Anthropic API key (starts with <code>sk-ant-</code>).<br>Get yours at <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com/settings/keys</a>.</div>`;
+      return;
+    }
+
+    const btn = document.getElementById('searchBtn');
+    const role = document.getElementById('role').value;
+    const location = document.getElementById('location').value;
+    const seniority = document.getElementById('seniority').value;
+    const remote = document.getElementById('remote').value;
+    const background = document.getElementById('background').value;
+    const skills = [...document.querySelectorAll('.chip.active')].map(c => c.dataset.skill).join(', ');
+
+    btn.disabled = true;
+    btn.textContent = 'Searching…';
+    resultsEl.innerHTML = `<hr class="divider"><div class="loading-state"><div class="spinner"></div>Claude is searching the web and ranking roles by fit…</div>`;
+
+    const today = new Date();
+    const month = today.toLocaleString('default', { month: 'long' });
+    const year = today.getFullYear();
+
+    const prompt = `You are a job search agent. Today's date is ${month} ${year}. Search the web for 5 RECENT job postings — posted within the last 30 days — matching:
+- Role: ${role}
+- Location: ${location}
+- Seniority: ${seniority}
+- Work arrangement: ${remote}
+- Key skills: ${skills}
+${background ? `- Candidate background: ${background}` : ''}
+
+IMPORTANT instructions for searching:
+- Include "${month} ${year}" or "2026" in your search queries to surface only recent postings
+- Search queries like: "${role} jobs ${location} ${year}" or "site:linkedin.com/jobs ${role} ${year}"
+- Only return postings that appear to be active and recent (posted in the last 30 days)
+- Discard any postings that look older than 30 days
+- Use LinkedIn, Indeed, Idealist, company career pages as sources
+
+For each job, assess fit based on the candidate's background and skills.
+
+Respond ONLY with a valid JSON array — no markdown fences, no preamble. Format:
+[
+  {
+    "title": "Job title",
+    "organization": "Company or org name",
+    "location": "City or Remote",
+    "type": "Full-time / Part-time / Contract",
+    "postedDate": "Approximate date posted e.g. 'May 2026' or '2 weeks ago'",
+    "fit": "High",
+    "fitReason": "One sentence explaining the fit",
+    "summary": "Two sentences describing the role and what makes it interesting",
+    "applyUrl": "Direct URL to the job posting"
+  }
+]`;
+
+    try {
+      // web_search is a server-side tool — Anthropic runs the search automatically.
+      // A single API call is all that's needed; no agentic loop required.
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 2000,
+          tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }],
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || `API error ${response.status}`);
+      }
+
+      const data = await response.json();
+      // Take only the LAST text block — earlier ones are search preamble ("I'll search for..."),
+      // the final text block is the actual JSON answer we need.
+      const textBlocks = data.content.filter(b => b.type === 'text').map(b => b.text);
+      const finalText = textBlocks.length ? textBlocks[textBlocks.length - 1] : '';
+
+      const clean = finalText.replace(/```json|```/g, '').trim();
+      const start = clean.indexOf('[');
+      const end = clean.lastIndexOf(']');
+      if (start === -1 || end === -1) throw new Error('Could not parse job results. Try searching again.');
+      const jobs = JSON.parse(clean.slice(start, end + 1));
+      if (!jobs.length) throw new Error('No matching jobs found. Try adjusting your criteria.');
+
+      resultsEl.innerHTML = `
+        <hr class="divider">
+        <div class="results-meta">${jobs.length} roles found · ranked by fit</div>
+        ${jobs.map(j => `
+          <div class="job-card">
+            <div class="job-top">
+              <div class="job-title">${j.title}</div>
+              <span class="fit-badge fit-${j.fit}">${j.fit} fit</span>
+            </div>
+            <div class="job-org">${j.organization}</div>
+            <div class="job-meta">
+              <span class="meta-item">📍 ${j.location}</span>
+              <span class="meta-item">💼 ${j.type}</span>
+              ${j.postedDate ? `<span class="meta-item">🕐 ${j.postedDate}</span>` : ""}
+            </div>
+            <div class="job-summary">${j.summary}</div>
+            <div class="fit-reason">${j.fitReason}</div>
+            <div class="job-actions">
+              <a class="btn-outline" href="${j.applyUrl}" target="_blank" rel="noopener">View posting →</a>
+            </div>
+          </div>
+        `).join('')}
+      `;
+
+    } catch(e) {
+      resultsEl.innerHTML = `<hr class="divider"><div class="error-box"><strong>Something went wrong:</strong> ${e.message}<br><br>Check your API key has credits at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>.</div>`;
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Search again →';
+  }
+</script>
+</body>
+</html>
